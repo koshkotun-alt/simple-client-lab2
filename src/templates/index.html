@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <title>Chat</title>
+    <style>
+      input {
+        display: block;
+      }
+      ul {
+        list-style: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <input type="text" id="username" placeholder="Ваше имя" />
+    </div>
+    <ul id="messages"></ul>
+    <form id="chatbox">
+      <textarea></textarea>
+      <input type="submit" value="Send" />
+    </form>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script>
+      let socket = null;
+
+      $(function () {
+        // Обработчик отправки формы
+        $("#chatbox").submit(function () {
+          const username = $("#username").val() || 'Аноним';
+
+          // Если сокет еще не открыт или закрыт — создаем подключение
+          if (!socket || socket.readyState !== WebSocket.OPEN) {
+            // Создаем подключение с именем в URL
+            socket = new WebSocket("ws://{{.Host}}/room?username=" + encodeURIComponent(username));
+            
+            socket.onclose = function () {
+              alert("Соединение закрыто");
+            };
+
+			socket.onmessage = function (e) {
+				try {
+					const data = JSON.parse(e.data);
+					$('#messages').append(
+					$('<li>').html('<b>' + data.username + ':</b> ' + data.message));
+				} catch (err) {
+					$('#messages').append($('<li>').text(e.data));
+				}
+			};
+
+          }
+
+          // Отправляем сообщение
+          const message = $("#chatbox textarea").val();
+          if (!message) return false;
+
+          // Можно добавить проверку состояния соединения
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(message);
+            $("#chatbox textarea").val('');
+          } else {
+            alert("Соединение еще не установлено");
+          }
+          
+          return false;
+        });
+      });
+    </script>
+  </body>
+</html>
